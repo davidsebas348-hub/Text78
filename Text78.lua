@@ -1,88 +1,147 @@
---// HIGHLIGHT AUTO-REAPLICABLE Toggle: jugadores con Tools
+--// ESP SHERIFF + BORRAR HIGHLIGHTS QUE EMPIECEN CON 0
+
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 
--- Toggle global
-if _G.ESPToolsActivo == nil then
-    _G.ESPToolsActivo = false
+-- Toggle
+if _G.ESPSheriffActivo == nil then
+    _G.ESPSheriffActivo = false
 end
 
--- Cambiar estado
-_G.ESPToolsActivo = not _G.ESPToolsActivo
+_G.ESPSheriffActivo = not _G.ESPSheriffActivo
 
--- Guardar loop para poder detenerlo
-if not _G.ESPToolsLoop then
-    _G.ESPToolsLoop = nil
+if not _G.ESPSheriffConns then
+    _G.ESPSheriffConns = {}
 end
 
--- Función principal de highlights
-local function applyHighlights()
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr.Character then
-            local hasTool = false
-            -- Revisar Tools en Character
-            for _, item in pairs(plr.Character:GetChildren()) do
-                if item:IsA("Tool") then
-                    hasTool = true
-                    break
-                end
-            end
-            -- Revisar Tools en Backpack
-            if not hasTool and plr:FindFirstChild("Backpack") then
-                for _, item in pairs(plr.Backpack:GetChildren()) do
-                    if item:IsA("Tool") then
-                        hasTool = true
-                        break
-                    end
-                end
-            end
+--------------------------------------------------
+-- CREAR ESP
+--------------------------------------------------
 
-            -- Crear Highlight si tiene Tool y toggle activo
-            if hasTool and _G.ESPToolsActivo then
-                if not plr.Character:FindFirstChild("ESP_Highlight") then
-                    local hl = Instance.new("Highlight")
-                    hl.Name = "ESP_Highlight"
-                    hl.Adornee = plr.Character
-                    hl.FillColor = Color3.fromRGB(0, 150, 255)
-                    hl.OutlineColor = Color3.fromRGB(0, 150, 255)
-                    hl.FillTransparency = 0.5
-                    hl.OutlineTransparency = 0
-                    hl.Parent = workspace
-                end
-            else
-                -- Quitar Highlight si no tiene Tool o toggle desactivado
-                local hl = plr.Character:FindFirstChild("ESP_Highlight")
-                if hl then hl:Destroy() end
-            end
+local function createESP(plr)
+
+    if not _G.ESPSheriffActivo then return end
+    if not plr.Character then return end
+    if plr == Players.LocalPlayer then return end
+
+    if plr.Character:FindFirstChild("ESP_SHERIFF") then return end
+
+    local hl = Instance.new("Highlight")
+    hl.Name = "ESP_SHERIFF"
+    hl.Adornee = plr.Character
+    hl.FillColor = Color3.fromRGB(0,150,255)
+    hl.OutlineColor = Color3.fromRGB(0,150,255)
+    hl.FillTransparency = 0.5
+    hl.Parent = workspace
+
+end
+
+--------------------------------------------------
+-- BORRAR HIGHLIGHTS QUE EMPIECEN CON 0
+--------------------------------------------------
+
+local function removeZeroHighlights(plr)
+
+    if not plr.Character then return end
+
+    for _,v in pairs(plr.Character:GetChildren()) do
+        if v:IsA("Highlight") and string.sub(v.Name,1,1) == "0" then
+            v:Destroy()
         end
     end
+
 end
 
--- Activar o desactivar loop
-if _G.ESPToolsActivo then
-    print("ESP de Tools ACTIVADO ✅")
-    -- Solo crear un loop si no existe
-    if not _G.ESPToolsLoop then
-        _G.ESPToolsLoop = task.spawn(function()
-            while _G.ESPToolsActivo do
-                applyHighlights()
-                task.wait(2.5)
-            end
-            _G.ESPToolsLoop = nil
+--------------------------------------------------
+-- CHECAR TEAM
+--------------------------------------------------
+
+local function checkSheriff(plr)
+
+    if not plr.Team then return end
+
+    if plr.Team.Name == "Sheriffs" then
+        createESP(plr)
+    else
+        local hl = plr.Character and plr.Character:FindFirstChild("ESP_SHERIFF")
+        if hl then hl:Destroy() end
+    end
+
+end
+
+--------------------------------------------------
+-- SETUP PLAYER
+--------------------------------------------------
+
+local function setupPlayer(plr)
+
+    if plr == Players.LocalPlayer then return end
+
+    local function charAdded(char)
+
+        removeZeroHighlights(plr)
+        checkSheriff(plr)
+
+        table.insert(_G.ESPSheriffConns,
+            char.ChildAdded:Connect(function(obj)
+
+                if obj:IsA("Highlight") and string.sub(obj.Name,1,1) == "0" then
+                    obj:Destroy()
+                end
+
+            end)
+        )
+
+    end
+
+    if plr.Character then
+        charAdded(plr.Character)
+    end
+
+    table.insert(_G.ESPSheriffConns,
+        plr.CharacterAdded:Connect(charAdded)
+    )
+
+    table.insert(_G.ESPSheriffConns,
+        plr:GetPropertyChangedSignal("Team"):Connect(function()
+            checkSheriff(plr)
+        end)
+    )
+
+end
+
+--------------------------------------------------
+-- ACTIVAR / DESACTIVAR
+--------------------------------------------------
+
+if _G.ESPSheriffActivo then
+
+    print("ESP Sheriff ACTIVADO")
+
+    for _,plr in pairs(Players:GetPlayers()) do
+        setupPlayer(plr)
+    end
+
+    table.insert(_G.ESPSheriffConns,
+        Players.PlayerAdded:Connect(setupPlayer)
+    )
+
+else
+
+    print("ESP Sheriff DESACTIVADO")
+
+    for _,c in pairs(_G.ESPSheriffConns) do
+        pcall(function()
+            c:Disconnect()
         end)
     end
-else
-    print("ESP de Tools DESACTIVADO ❌")
-    -- Eliminar todos los highlights existentes
-    for _, plr in pairs(Players:GetPlayers()) do
+
+    _G.ESPSheriffConns = {}
+
+    for _,plr in pairs(Players:GetPlayers()) do
         if plr.Character then
-            local hl = plr.Character:FindFirstChild("ESP_Highlight")
+            local hl = plr.Character:FindFirstChild("ESP_SHERIFF")
             if hl then hl:Destroy() end
         end
     end
-    -- Detener loop si existe
-    if _G.ESPToolsLoop then
-        _G.ESPToolsActivo = false
-        _G.ESPToolsLoop = nil
-    end
+
 end
