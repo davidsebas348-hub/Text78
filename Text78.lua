@@ -1,6 +1,11 @@
 --// ESP SHERIFF + BORRAR HIGHLIGHTS QUE EMPIECEN CON 0
 
+repeat task.wait() until game:IsLoaded()
+
 local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+repeat task.wait() until LocalPlayer.Character
 
 -- Toggle
 if _G.ESPSheriffActivo == nil then
