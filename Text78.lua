@@ -1,22 +1,28 @@
-repeat task.wait() until game:IsLoaded()
+--// ESP SHERIFF + BORRAR HIGHLIGHTS QUE EMPIECEN CON 0
 
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
 
-if getgenv().ESPSheriffActivo == nil then
-    getgenv().ESPSheriffActivo = false
+-- Toggle
+if _G.ESPSheriffActivo == nil then
+    _G.ESPSheriffActivo = false
 end
 
-getgenv().ESPSheriffActivo = not getgenv().ESPSheriffActivo
+_G.ESPSheriffActivo = not _G.ESPSheriffActivo
 
-if not getgenv().ESPSheriffConns then
-    getgenv().ESPSheriffConns = {}
+if not _G.ESPSheriffConns then
+    _G.ESPSheriffConns = {}
 end
+
+--------------------------------------------------
+-- CREAR ESP
+--------------------------------------------------
 
 local function createESP(plr)
-    if not getgenv().ESPSheriffActivo then return end
+
+    if not _G.ESPSheriffActivo then return end
     if not plr.Character then return end
-    if plr == LocalPlayer then return end
+    if plr == Players.LocalPlayer then return end
+
     if plr.Character:FindFirstChild("ESP_SHERIFF") then return end
 
     local hl = Instance.new("Highlight")
@@ -26,27 +32,31 @@ local function createESP(plr)
     hl.OutlineColor = Color3.fromRGB(0,150,255)
     hl.FillTransparency = 0.5
     hl.Parent = workspace
+
 end
 
-local function removeZeroHighlights()
-    for _,v in pairs(workspace:GetDescendants()) do
-        if v:IsA("Highlight") and v.Name:sub(1,1) == "0" then
+--------------------------------------------------
+-- BORRAR HIGHLIGHTS QUE EMPIECEN CON 0
+--------------------------------------------------
+
+local function removeZeroHighlights(plr)
+
+    if not plr.Character then return end
+
+    for _,v in pairs(plr.Character:GetChildren()) do
+        if v:IsA("Highlight") and string.sub(v.Name,1,1) == "0" then
             v:Destroy()
         end
     end
+
 end
 
-removeZeroHighlights()
-
-table.insert(getgenv().ESPSheriffConns,
-    workspace.DescendantAdded:Connect(function(v)
-        if v:IsA("Highlight") and v.Name:sub(1,1) == "0" then
-            v:Destroy()
-        end
-    end)
-)
+--------------------------------------------------
+-- CHECAR TEAM
+--------------------------------------------------
 
 local function checkSheriff(plr)
+
     if not plr.Team then return end
 
     if plr.Team.Name == "Sheriffs" then
@@ -55,49 +65,77 @@ local function checkSheriff(plr)
         local hl = plr.Character and plr.Character:FindFirstChild("ESP_SHERIFF")
         if hl then hl:Destroy() end
     end
+
 end
 
+--------------------------------------------------
+-- SETUP PLAYER
+--------------------------------------------------
+
 local function setupPlayer(plr)
-    if plr == LocalPlayer then return end
+
+    if plr == Players.LocalPlayer then return end
 
     local function charAdded(char)
+
+        removeZeroHighlights(plr)
         checkSheriff(plr)
+
+        table.insert(_G.ESPSheriffConns,
+            char.ChildAdded:Connect(function(obj)
+
+                if obj:IsA("Highlight") and string.sub(obj.Name,1,1) == "0" then
+                    obj:Destroy()
+                end
+
+            end)
+        )
+
     end
 
     if plr.Character then
         charAdded(plr.Character)
     end
 
-    table.insert(getgenv().ESPSheriffConns,
+    table.insert(_G.ESPSheriffConns,
         plr.CharacterAdded:Connect(charAdded)
     )
 
-    table.insert(getgenv().ESPSheriffConns,
+    table.insert(_G.ESPSheriffConns,
         plr:GetPropertyChangedSignal("Team"):Connect(function()
             checkSheriff(plr)
         end)
     )
+
 end
 
-if getgenv().ESPSheriffActivo then
+--------------------------------------------------
+-- ACTIVAR / DESACTIVAR
+--------------------------------------------------
+
+if _G.ESPSheriffActivo then
+
+    print("ESP Sheriff ACTIVADO")
 
     for _,plr in pairs(Players:GetPlayers()) do
         setupPlayer(plr)
     end
 
-    table.insert(getgenv().ESPSheriffConns,
+    table.insert(_G.ESPSheriffConns,
         Players.PlayerAdded:Connect(setupPlayer)
     )
 
 else
 
-    for _,c in pairs(getgenv().ESPSheriffConns) do
+    print("ESP Sheriff DESACTIVADO")
+
+    for _,c in pairs(_G.ESPSheriffConns) do
         pcall(function()
             c:Disconnect()
         end)
     end
 
-    getgenv().ESPSheriffConns = {}
+    _G.ESPSheriffConns = {}
 
     for _,plr in pairs(Players:GetPlayers()) do
         if plr.Character then
