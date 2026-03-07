@@ -20,7 +20,11 @@ local function createESP(plr)
     if not plr.Character then return end
     if plr == Players.LocalPlayer then return end
 
-    if plr.Character:FindFirstChild("ESP_SHERIFF") then return end
+    for _,v in pairs(workspace:GetChildren()) do
+        if v:IsA("Highlight") and v.Name == "ESP_SHERIFF" and v.Adornee == plr.Character then
+            return
+        end
+    end
 
     local hl = Instance.new("Highlight")
     hl.Name = "ESP_SHERIFF"
@@ -51,8 +55,11 @@ local function checkSheriff(plr)
     if plr.Team.Name == "Sheriffs" then
         createESP(plr)
     else
-        local hl = plr.Character and plr.Character:FindFirstChild("ESP_SHERIFF")
-        if hl then hl:Destroy() end
+        for _,v in pairs(workspace:GetChildren()) do
+            if v:IsA("Highlight") and v.Name == "ESP_SHERIFF" and v.Adornee == plr.Character then
+                v:Destroy()
+            end
+        end
     end
 
 end
@@ -118,10 +125,10 @@ else
 
     _G.ESPSheriffConns = {}
 
-    for _,plr in pairs(Players:GetPlayers()) do
-        if plr.Character then
-            local hl = plr.Character:FindFirstChild("ESP_SHERIFF")
-            if hl then hl:Destroy() end
+    -- destruir todos los ESP en workspace
+    for _,v in pairs(workspace:GetChildren()) do
+        if v:IsA("Highlight") and v.Name == "ESP_SHERIFF" then
+            v:Destroy()
         end
     end
 
