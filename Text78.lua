@@ -1,8 +1,5 @@
---// ESP SHERIFF + BORRAR HIGHLIGHTS QUE EMPIECEN CON 0
-
 local Players = game:GetService("Players")
 
--- Toggle
 if _G.ESPSheriffActivo == nil then
     _G.ESPSheriffActivo = false
 end
@@ -13,9 +10,9 @@ if not _G.ESPSheriffConns then
     _G.ESPSheriffConns = {}
 end
 
---------------------------------------------------
--- CREAR ESP
---------------------------------------------------
+local function startsWithNumber(text)
+    return tonumber(string.sub(text,1,1)) ~= nil
+end
 
 local function createESP(plr)
 
@@ -35,25 +32,17 @@ local function createESP(plr)
 
 end
 
---------------------------------------------------
--- BORRAR HIGHLIGHTS QUE EMPIECEN CON 0
---------------------------------------------------
-
-local function removeZeroHighlights(plr)
+local function removeNumberHighlights(plr)
 
     if not plr.Character then return end
 
     for _,v in pairs(plr.Character:GetChildren()) do
-        if v:IsA("Highlight") and string.sub(v.Name,1,1) == "0" then
+        if v:IsA("Highlight") and startsWithNumber(v.Name) then
             v:Destroy()
         end
     end
 
 end
-
---------------------------------------------------
--- CHECAR TEAM
---------------------------------------------------
 
 local function checkSheriff(plr)
 
@@ -68,23 +57,19 @@ local function checkSheriff(plr)
 
 end
 
---------------------------------------------------
--- SETUP PLAYER
---------------------------------------------------
-
 local function setupPlayer(plr)
 
     if plr == Players.LocalPlayer then return end
 
     local function charAdded(char)
 
-        removeZeroHighlights(plr)
+        removeNumberHighlights(plr)
         checkSheriff(plr)
 
         table.insert(_G.ESPSheriffConns,
             char.ChildAdded:Connect(function(obj)
 
-                if obj:IsA("Highlight") and string.sub(obj.Name,1,1) == "0" then
+                if obj:IsA("Highlight") and startsWithNumber(obj.Name) then
                     obj:Destroy()
                 end
 
@@ -108,10 +93,6 @@ local function setupPlayer(plr)
     )
 
 end
-
---------------------------------------------------
--- ACTIVAR / DESACTIVAR
---------------------------------------------------
 
 if _G.ESPSheriffActivo then
 
